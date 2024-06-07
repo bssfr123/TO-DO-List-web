@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Todo 리스트</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+  <style>
+    #calendar-container {
+      margin-bottom: 20px;
+    }
+    #todo-form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Todo 리스트</h1>
+  <div id="calendar-container">
+    <label for="todo-date">날짜 선택:</label>
+    <input type="text" id="todo-date" placeholder="날짜를 선택하세요" required>
+  </div>
+  <form id="todo-form">
+    <input type="text" id="todo-input" placeholder="새로운 할 일을 입력하세요" required>
+    <button type="submit">추가</button>
+  </form>
+  <ul id="todo-list"></ul>
+
+  <script>
+    $(document).ready(function() {
+      // jQuery UI Datepicker 초기화
+      $('#todo-date').datepicker({
+        dateFormat: 'yy-mm-dd'
+      });
+
+      // 할 일 목록 불러오기
+      fetch('/todos')
+        .then(response => response.json())
+        .then(todos => {
+          console.log('Todos fetched from server:', todos);
+          todos.forEach(todo => {
+            $('#todo-list').append(`<li data-id="${todo._id}">
+              <input type="checkbox" ${todo.completed ? 'checked' : ''}> ${todo.text} (${todo.date})
+              <button class="delete-btn">삭제</button>
+            </li>`);
+          });
+        });
+
+      // 새로운 할 일 추가
+      $('#todo-form').submit(function(event) {
+        event.preventDefault();
+        const text = $('#todo-input').val();
+        const date = $('#todo-date').val();
+        if (!date) {
+          alert('날짜를 선택하세요.');
+          return;
+        }
+        $.post('/todos', { text, date }, function(todo) {
+          console.log('Todo added:', todo);
+          $('#todo-list').append(`<li data-id="${todo._id}">
+            <input type="checkbox"> ${todo.text} (${todo.date})
+            <button class="delete-btn">삭제</button>
+          </li>`);
+          $('#todo-input').val('');
+          $('#todo-date').val('');
+        });
+      });
+
+      // 할 일 완료 상태 변경
+      $('#todo-list').on('change', 'input[type="checkbox"]', function() {
+        const li = $(this).closest('li');
+        const todoId = li.data('id');
+        const completed = $(this).is(':checked');
+        console.log(`Updating todo with id: ${todoId}, completed: ${completed}`);
+        $.ajax({
+          url: `/todos/${todoId}`,
+          method: 'PUT',
+          contentType: 'application/json',
+          data: JSON.stringify({ completed }),
+          success: function() {
+            console.log(`Todo with id ${todoId} updated successfully`);
+          },
+          error: function(jqXHR, textStatus, errorThrown) {
+            console.log(`Error updating todo with id ${todoId}: ${textStatus} - ${errorThrown}`);
+          }
+        });
+      });
+
+      // 할 일 삭제
+      $('#todo-list').on('click', '.delete-btn', function() {
+        const li = $(this).closest('li');
+        const todoId = li.data('id');
+        console.log(`Deleting todo with id: ${todoId}`);
+        $.ajax({
+          url: `/todos/${todoId}`,
+          method: 'DELETE',
+          success: function() {
+            console.log(`Todo with id ${todoId} deleted successfully`);
+            li.remove();
+          },
+          error: function(jqXHR, textStatus, errorThrown) {
+            console.log(`Error deleting todo with id ${todoId}: ${textStatus} - ${errorThrown}`);
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>
