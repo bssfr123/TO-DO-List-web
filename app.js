@@ -1,18 +1,26 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
-const path = require('path'); // 추가된 부분
+const path = require('path');
 const app = express();
 
-// MongoDB 연결
-mongoose.connect('mongodb://localhost:27017/myapp')
-  .then(() => console.log('MongoDB Connected'))
-  .catch(err => console.log(err));
+mongoose.connect('mongodb://127.0.0.1:27017/todolist', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
 
-// 사용자 모델 생성
+// 사용자 모델 정의
 const User = mongoose.model('User', {
   username: String,
   password: String
+});
+
+// Todo 모델 정의
+const Todo = mongoose.model('Todo', {
+  userId: mongoose.Schema.Types.ObjectId,
+  text: String,
+  date: String,  // 날짜 필드 추가
+  completed: Boolean,
 });
 
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -29,6 +37,11 @@ app.get('/signup', (req, res) => {
 // 로그인 페이지 서빙
 app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'login.html'));
+});
+
+// Todo 리스트 페이지 서빙
+app.get('/todos', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'todo.html'));
 });
 
 // 회원가입 엔드포인트
@@ -60,10 +73,63 @@ app.post('/login', async (req, res) => {
     }
     const user = await User.findOne({ username, password });
     if (user) {
-      res.send('로그인 성공!');
+      res.redirect('/todos');
     } else {
       res.status(401).send('로그인 실패: 유저 정보가 일치하지 않습니다.');
     }
+  } catch (err) {
+    console.log(err);
+    res.status(500).send('서버 에러');
+  }
+});
+
+// Todo CRUD 엔드포인트
+app.get('/todos', async (req, res) => {
+  try {
+    const todos = await Todo.find({});
+    res.json(todos);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send('서버 에러');
+  }
+});
+
+app.post('/todos', async (req, res) => {
+  try {
+    const { text, date } = req.body; // date 필드를 추가
+    if (!text || !date) {
+      return res.status(400).send('유효하지 않은 요청: 할 일 내용과 날짜를 입력하세요.');
+    }
+    const todo = new Todo({
+      text,
+      date,  // date 필드를 추가
+      completed: false
+    });
+    await todo.save();
+    res.json(todo);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send('서버 에러');
+  }
+});
+
+app.put('/todos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { completed } = req.body;
+    await Todo.findByIdAndUpdate(id, { completed });
+    res.send('업데이트 성공');
+  } catch (err) {
+    console.log(err);
+    res.status(500).send('서버 에러');
+  }
+});
+
+app.delete('/todos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Todo.findByIdAndDelete(id);
+    res.send('삭제 성공');
   } catch (err) {
     console.log(err);
     res.status(500).send('서버 에러');
