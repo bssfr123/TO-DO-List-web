@@ -58,6 +58,7 @@ app.post('/signup', async (req, res) => {
     const user = new User({ username, password });
     await user.save();
     res.send('회원가입 성공!');
+    res.redirect('/login');
   } catch (err) {
     console.log(err);
     res.status(500).send('서버 에러');
