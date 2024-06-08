@@ -19,7 +19,7 @@ const User = mongoose.model('User', {
 const Todo = mongoose.model('Todo', {
   userId: mongoose.Schema.Types.ObjectId,
   text: String,
-  date: String,  // 날짜 필드 추가
+  date: String,
   completed: Boolean,
 });
 
@@ -101,13 +101,13 @@ app.get('/todos', async (req, res) => {
 
 app.post('/todos', async (req, res) => {
   try {
-    const { text, date } = req.body; // date 필드를 추가
+    const { text, date } = req.body;
     if (!text || !date) {
       return res.status(400).send('유효하지 않은 요청: 할 일 내용과 날짜를 입력하세요.');
     }
     const todo = new Todo({
       text,
-      date,  // date 필드를 추가
+      date,
       completed: false
     });
     await todo.save();
@@ -123,6 +123,23 @@ app.put('/todos/:id', async (req, res) => {
     const { id } = req.params;
     const { completed } = req.body;
     await Todo.findByIdAndUpdate(id, { completed });
+    res.send('업데이트 성공');
+  } catch (err) {
+    console.log(err);
+    res.status(500).send('서버 에러');
+  }
+});
+
+app.put('/todos/update/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { text, date } = req.body;
+
+    if (!text || !date) {
+      return res.status(400).send('유효하지 않은 요청: 할 일 내용과 날짜를 입력하세요.');
+    }
+
+    await Todo.findByIdAndUpdate(id, { text, date });
     res.send('업데이트 성공');
   } catch (err) {
     console.log(err);

@@ -31,25 +31,28 @@
 
   <script>
     $(document).ready(function() {
-      // jQuery UI Datepicker 초기화
       $('#todo-date').datepicker({
         dateFormat: 'yy-mm-dd'
       });
 
-      // 할 일 목록 불러오기
       fetch('/todos')
         .then(response => response.json())
         .then(todos => {
-          console.log('Todos fetched from server:', todos);
           todos.forEach(todo => {
             $('#todo-list').append(`<li data-id="${todo._id}">
-              <input type="checkbox" ${todo.completed ? 'checked' : ''}> ${todo.text} (${todo.date})
+              <input type="checkbox" ${todo.completed ? 'checked' : ''}> 
+              <span class="todo-text">${todo.text}</span> (${todo.date})
+              <button class="edit-btn">수정</button>
               <button class="delete-btn">삭제</button>
+              <form class="edit-form" style="display: none;">
+                <input type="text" class="edit-text" value="${todo.text}">
+                <input type="text" class="edit-date" value="${todo.date}">
+                <button type="submit">저장</button>
+              </form>
             </li>`);
           });
         });
 
-      // 새로운 할 일 추가
       $('#todo-form').submit(function(event) {
         event.preventDefault();
         const text = $('#todo-input').val();
@@ -59,22 +62,26 @@
           return;
         }
         $.post('/todos', { text, date }, function(todo) {
-          console.log('Todo added:', todo);
           $('#todo-list').append(`<li data-id="${todo._id}">
-            <input type="checkbox"> ${todo.text} (${todo.date})
+            <input type="checkbox"> 
+            <span class="todo-text">${todo.text}</span> (${todo.date})
+            <button class="edit-btn">수정</button>
             <button class="delete-btn">삭제</button>
+            <form class="edit-form" style="display: none;">
+              <input type="text" class="edit-text" value="${todo.text}">
+              <input type="text" class="edit-date" value="${todo.date}">
+              <button type="submit">저장</button>
+            </form>
           </li>`);
           $('#todo-input').val('');
           $('#todo-date').val('');
         });
       });
 
-      // 할 일 완료 상태 변경
       $('#todo-list').on('change', 'input[type="checkbox"]', function() {
         const li = $(this).closest('li');
         const todoId = li.data('id');
         const completed = $(this).is(':checked');
-        console.log(`Updating todo with id: ${todoId}, completed: ${completed}`);
         $.ajax({
           url: `/todos/${todoId}`,
           method: 'PUT',
@@ -89,20 +96,43 @@
         });
       });
 
-      // 할 일 삭제
       $('#todo-list').on('click', '.delete-btn', function() {
         const li = $(this).closest('li');
         const todoId = li.data('id');
-        console.log(`Deleting todo with id: ${todoId}`);
         $.ajax({
           url: `/todos/${todoId}`,
           method: 'DELETE',
           success: function() {
-            console.log(`Todo with id ${todoId} deleted successfully`);
             li.remove();
           },
           error: function(jqXHR, textStatus, errorThrown) {
             console.log(`Error deleting todo with id ${todoId}: ${textStatus} - ${errorThrown}`);
+          }
+        });
+      });
+
+      $('#todo-list').on('click', '.edit-btn', function() {
+        const li = $(this).closest('li');
+        li.find('.edit-form').toggle();
+      });
+
+      $('#todo-list').on('submit', '.edit-form', function(event) {
+        event.preventDefault();
+        const li = $(this).closest('li');
+        const todoId = li.data('id');
+        const newText = li.find('.edit-text').val();
+        const newDate = li.find('.edit-date').val();
+        $.ajax({
+          url: `/todos/update/${todoId}`,
+          method: 'PUT',
+          contentType: 'application/json',
+          data: JSON.stringify({ text: newText, date: newDate }),
+          success: function() {
+            li.find('.todo-text').text(newText);
+            li.find('.edit-form').hide();
+          },
+          error: function(jqXHR, textStatus, errorThrown) {
+            console.log(`Error updating todo with id ${todoId}: ${textStatus} - ${errorThrown}`);
           }
         });
       });
