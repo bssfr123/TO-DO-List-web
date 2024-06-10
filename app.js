@@ -29,6 +29,11 @@ app.use(bodyParser.json());
 // 정적 파일 서빙
 app.use(express.static('views'));
 
+// index.html 서빙
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'index.html'));
+});
+
 // 회원가입 페이지 서빙
 app.get('/signup', (req, res) => {
   res.sendFile(path.join(__dirname, 'views', 'signup.html'));

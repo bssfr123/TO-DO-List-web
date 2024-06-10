@@ -38,6 +38,8 @@
       fetch('/todos')
         .then(response => response.json())
         .then(todos => {
+          // 할 일 리스트를 날짜 기준으로 정렬합니다.
+          todos.sort((a, b) => new Date(a.date) - new Date(b.date));
           todos.forEach(todo => {
             $('#todo-list').append(`
               <li data-id="${todo._id}">
@@ -138,6 +140,22 @@
           },
           error: function(jqXHR, textStatus, errorThrown) {
             console.log(`Error updating todo with id ${todoId}: ${textStatus} - ${errorThrown}`);
+          }
+        });
+      });
+      $('#search-btn').click(function() {
+        const searchText = $('#search-input').val().trim().toLowerCase();
+        if (searchText === '') {
+          alert('검색어를 입력하세요.');
+          return;
+        }
+        // 검색어와 일치하는 할 일 항목을 필터링하여 보여줍니다.
+        $('#todo-list li').each(function() {
+          const todoText = $(this).find('.todo-text').text().toLowerCase();
+          if (todoText.includes(searchText)) {
+            $(this).show();
+          } else {
+            $(this).hide();
           }
         });
       });
