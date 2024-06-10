@@ -29,7 +29,42 @@
   </form>
   <ul id="todo-list"></ul>
 
+  <button id="sort-btn">날짜순 정렬</button>
+  <div>
+    <input type="text" id="search-input" placeholder="검색어를 입력하세요">
+    <button id="search-btn">검색</button>
+  </div>
+
   <script>
+    // 할 일 목록을 날짜순으로 정렬하는 함수
+    function sortTodoList() {
+      const $todoList = $('#todo-list');
+      const $todos = $todoList.children('li');
+
+      $todos.sort(function(a, b) {
+        const dateA = new Date($(a).find('.todo-date').text());
+        const dateB = new Date($(b).find('.todo-date').text());
+        return dateA - dateB;
+      });
+
+      $todos.detach().appendTo($todoList);
+    }
+
+    // 검색 기능을 구현하는 함수
+    function filterTodoList(searchText) {
+      const $todoList = $('#todo-list');
+      const $todos = $todoList.children('li');
+
+      $todos.each(function() {
+        const todoText = $(this).find('.todo-text').text().toLowerCase();
+        if (todoText.includes(searchText)) {
+          $(this).show();
+        } else {
+          $(this).hide();
+        }
+      });
+    }
+
     $(document).ready(function() {
       $('#todo-date').datepicker({
         dateFormat: 'yy-mm-dd'
@@ -57,32 +92,32 @@
           });
         });
 
-        $('#todo-form').submit(function(event) {
-          event.preventDefault();
-          const text = $('#todo-input').val();
-          const date = $('#todo-date').val();
-          if (!date) {
-            alert('날짜를 선택하세요.');
-            return;
-          }
-          $.post('/todos', { text, date }, function(todo) {
-            $('#todo-list').append(`
-              <li data-id="${todo._id}">
-                <input type="checkbox"> 
-                <span class="todo-text">${todo.text}</span>
-                <span class="todo-date">${todo.date}</span>
-                <button class="edit-btn">수정</button>
-                <button class="delete-btn">삭제</button>
-                <form class="edit-form" style="display: none;">
-                  <input type="text" class="edit-text" value="${todo.text}">
-                  <input type="text" class="edit-date" value="${todo.date}">
-                  <button type="submit">저장</button>
-                </form>
-              </li>`);
-            $('#todo-input').val('');
-            $('#todo-date').val('');
-          });
+      $('#todo-form').submit(function(event) {
+        event.preventDefault();
+        const text = $('#todo-input').val();
+        const date = $('#todo-date').val();
+        if (!date) {
+          alert('날짜를 선택하세요.');
+          return;
+        }
+        $.post('/todos', { text, date }, function(todo) {
+          $('#todo-list').append(`
+            <li data-id="${todo._id}">
+              <input type="checkbox"> 
+              <span class="todo-text">${todo.text}</span>
+              <span class="todo-date">${todo.date}</span>
+              <button class="edit-btn">수정</button>
+              <button class="delete-btn">삭제</button>
+              <form class="edit-form" style="display: none;">
+                <input type="text" class="edit-text" value="${todo.text}">
+                <input type="text" class="edit-date" value="${todo.date}">
+                <button type="submit">저장</button>
+              </form>
+            </li>`);
+          $('#todo-input').val('');
+          $('#todo-date').val('');
         });
+      });
 
       $('#todo-list').on('change', 'input[type="checkbox"]', function() {
         const li = $(this).closest('li');
@@ -143,21 +178,19 @@
           }
         });
       });
+
+      $('#sort-btn').click(function() {
+        sortTodoList();
+      });
+
       $('#search-btn').click(function() {
         const searchText = $('#search-input').val().trim().toLowerCase();
         if (searchText === '') {
           alert('검색어를 입력하세요.');
           return;
         }
-        // 검색어와 일치하는 할 일 항목을 필터링하여 보여줍니다.
-        $('#todo-list li').each(function() {
-          const todoText = $(this).find('.todo-text').text().toLowerCase();
-          if (todoText.includes(searchText)) {
-            $(this).show();
-          } else {
-            $(this).hide();
-          }
-        });
+        // 검색 기능 호출
+        filterTodoList(searchText);
       });
     });
   </script>
