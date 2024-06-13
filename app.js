@@ -21,6 +21,8 @@ const Todo = mongoose.model('Todo', {
   text: String,
   date: String,
   completed: Boolean,
+  details: String, // 상세 정보 필드 추가
+  category: String
 });
 
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -106,14 +108,16 @@ app.get('/todos', async (req, res) => {
 
 app.post('/todos', async (req, res) => {
   try {
-    const { text, date } = req.body;
+    const { text, date, details, category } = req.body;
     if (!text || !date) {
       return res.status(400).send('유효하지 않은 요청: 할 일 내용과 날짜를 입력하세요.');
     }
     const todo = new Todo({
       text,
       date,
-      completed: false
+      completed: false,
+      details,
+      category // 카테고리 필드 저장
     });
     await todo.save();
     res.json(todo);
@@ -123,11 +127,16 @@ app.post('/todos', async (req, res) => {
   }
 });
 
-app.put('/todos/:id', async (req, res) => {
+app.put('/todos/update/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { completed } = req.body;
-    await Todo.findByIdAndUpdate(id, { completed });
+    const { text, date, details, category } = req.body;
+
+    if (!text || !date) {
+      return res.status(400).send('유효하지 않은 요청: 할 일 내용과 날짜를 입력하세요.');
+    }
+
+    await Todo.findByIdAndUpdate(id, { text, date, details, category }); // 카테고리 필드 업데이트
     res.send('업데이트 성공');
   } catch (err) {
     console.log(err);
@@ -135,16 +144,18 @@ app.put('/todos/:id', async (req, res) => {
   }
 });
 
+
+
 app.put('/todos/update/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { text, date } = req.body;
+    const { text, date, details } = req.body;
 
     if (!text || !date) {
       return res.status(400).send('유효하지 않은 요청: 할 일 내용과 날짜를 입력하세요.');
     }
 
-    await Todo.findByIdAndUpdate(id, { text, date });
+    await Todo.findByIdAndUpdate(id, { text, date, details }); // 상세 정보 필드 업데이트
     res.send('업데이트 성공');
   } catch (err) {
     console.log(err);

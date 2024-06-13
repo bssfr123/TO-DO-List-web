@@ -7,13 +7,81 @@
   <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
   <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
   <style>
-    #calendar-container {
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #333;
+      color: #f0f0f0;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #f0f0f0;
+    }
+    #calendar-container, #todo-form, #todo-list-container, #search-container {
+      background-color: #444;
+      border-radius: 10px;
+      padding: 20px;
       margin-bottom: 20px;
     }
     #todo-form {
       display: flex;
       flex-direction: column;
       gap: 10px;
+    }
+    input, select, textarea, button {
+      padding: 10px;
+      border-radius: 5px;
+      border: none;
+      margin-top: 5px;
+    }
+    input, select, textarea {
+      background-color: #555;
+      color: #f0f0f0;
+    }
+    button {
+      background-color: #222;
+      color: #f0f0f0;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #111;
+    }
+    #todo-list {
+      list-style-type: none;
+      padding: 0;
+    }
+    #todo-list li {
+      background-color: #555;
+      border-radius: 5px;
+      padding: 10px;
+      margin-bottom: 10px;
+      display: flex;
+      flex-direction: column;
+    }
+    #todo-list li input[type="checkbox"] {
+      margin-right: 10px;
+    }
+    #todo-list li .todo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    #todo-list li .todo-details {
+      margin-top: 10px;
+      background-color: #666;
+      border-radius: 5px;
+      padding: 10px;
+    }
+    .edit-form {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    #sort-btn, #search-btn {
+      width: 100%;
     }
   </style>
 </head>
@@ -25,12 +93,21 @@
   </div>
   <form id="todo-form">
     <input type="text" id="todo-input" placeholder="새로운 할 일을 입력하세요" required>
+    <select id="todo-category" required>
+      <option value="">카테고리 선택</option>
+      <option value="work">업무</option>
+      <option value="personal">개인</option>
+      <option value="shopping">쇼핑</option>
+      <option value="others">기타</option>
+    </select>
+    <textarea id="todo-details" placeholder="상세 정보를 입력하세요"></textarea>
     <button type="submit">추가</button>
   </form>
-  <ul id="todo-list"></ul>
-
+  <div id="todo-list-container">
+    <ul id="todo-list"></ul>
+  </div>
   <button id="sort-btn">날짜순 정렬</button>
-  <div>
+  <div id="search-container">
     <input type="text" id="search-input" placeholder="검색어를 입력하세요">
     <button id="search-btn">검색</button>
   </div>
@@ -78,14 +155,29 @@
           todos.forEach(todo => {
             $('#todo-list').append(`
               <li data-id="${todo._id}">
-                <input type="checkbox" ${todo.completed ? 'checked' : ''}> 
-                <span class="todo-text">${todo.text}</span>
-                <span class="todo-date">${todo.date}</span>
-                <button class="edit-btn">수정</button>
-                <button class="delete-btn">삭제</button>
-                <form class="edit-form" style="display: none;">
+                <div class="todo-header">
+                  <div>
+                    <input type="checkbox" ${todo.completed ? 'checked' : ''}>
+                    <span class="todo-text">${todo.text}</span>
+                    <span class="todo-date">${todo.date}</span>
+                    <span class="todo-category">${todo.category}</span>
+                  </div>
+                  <div>
+                    <button class="edit-btn">수정</button>
+                    <button class="delete-btn">삭제</button>
+                  </div>
+                </div>
+                <p class="todo-details">${todo.details}</p>
+                <form class="edit-form">
                   <input type="text" class="edit-text" value="${todo.text}">
                   <input type="text" class="edit-date" value="${todo.date}">
+                  <select class="edit-category">
+                    <option value="work" ${todo.category === 'work' ? 'selected' : ''}>업무</option>
+                    <option value="personal" ${todo.category === 'personal' ? 'selected' : ''}>개인</option>
+                    <option value="shopping" ${todo.category === 'shopping' ? 'selected' : ''}>쇼핑</option>
+                    <option value="others" ${todo.category === 'others' ? 'selected' : ''}>기타</option>
+                  </select>
+                  <textarea class="edit-details">${todo.details}</textarea>
                   <button type="submit">저장</button>
                 </form>
               </li>`);
@@ -96,26 +188,49 @@
         event.preventDefault();
         const text = $('#todo-input').val();
         const date = $('#todo-date').val();
+        const category = $('#todo-category').val();
+        const details = $('#todo-details').val();
         if (!date) {
           alert('날짜를 선택하세요.');
           return;
         }
-        $.post('/todos', { text, date }, function(todo) {
+        if (!category) {
+          alert('카테고리를 선택하세요.');
+          return;
+        }
+        $.post('/todos', { text, date, category, details }, function(todo) {
           $('#todo-list').append(`
             <li data-id="${todo._id}">
-              <input type="checkbox"> 
-              <span class="todo-text">${todo.text}</span>
-              <span class="todo-date">${todo.date}</span>
-              <button class="edit-btn">수정</button>
-              <button class="delete-btn">삭제</button>
-              <form class="edit-form" style="display: none;">
+              <div class="todo-header">
+                <div>
+                  <input type="checkbox">
+                  <span class="todo-text">${todo.text}</span>
+                  <span class="todo-date">${todo.date}</span>
+                  <span class="todo-category">${todo.category}</span>
+                </div>
+                <div>
+                  <button class="edit-btn">수정</button>
+                  <button class="delete-btn">삭제</button>
+                </div>
+              </div>
+              <p class="todo-details">${todo.details}</p>
+              <form class="edit-form">
                 <input type="text" class="edit-text" value="${todo.text}">
                 <input type="text" class="edit-date" value="${todo.date}">
+                <select class="edit-category">
+                  <option value="업무">업무</option>
+                  <option value="개인">개인</option>
+                  <option value="쇼핑">쇼핑</option>
+                  <option value="기타">기타</option>
+                </select>
+                <textarea class="edit-details">${todo.details}</textarea>
                 <button type="submit">저장</button>
               </form>
             </li>`);
           $('#todo-input').val('');
           $('#todo-date').val('');
+          $('#todo-category').val('');
+          $('#todo-details').val('');
         });
       });
 
@@ -163,14 +278,18 @@
         const todoId = li.data('id');
         const newText = li.find('.edit-text').val();
         const newDate = li.find('.edit-date').val();
+        const newCategory = li.find('.edit-category').val();
+        const newDetails = li.find('.edit-details').val();
         $.ajax({
           url: `/todos/update/${todoId}`,
           method: 'PUT',
           contentType: 'application/json',
-          data: JSON.stringify({ text: newText, date: newDate }),
+          data: JSON.stringify({ text: newText, date: newDate, category: newCategory, details: newDetails }),
           success: function() {
             li.find('.todo-text').text(newText);
             li.find('.todo-date').text(newDate);
+            li.find('.todo-category').text(newCategory);
+            li.find('.todo-details').text(newDetails);
             li.find('.edit-form').hide();
           },
           error: function(jqXHR, textStatus, errorThrown) {
