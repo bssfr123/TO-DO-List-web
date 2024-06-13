@@ -144,8 +144,6 @@ app.put('/todos/update/:id', async (req, res) => {
   }
 });
 
-
-
 app.put('/todos/update/:id', async (req, res) => {
   try {
     const { id } = req.params;

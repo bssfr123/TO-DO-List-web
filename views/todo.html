@@ -305,7 +305,7 @@
       $('#search-btn').click(function() {
         const searchText = $('#search-input').val().trim().toLowerCase();
         if (searchText === '') {
-          alert('검색어를 입력하세요.');
+          $('#todo-list').children('li').show();
           return;
         }
         // 검색 기능 호출
