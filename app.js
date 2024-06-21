@@ -33,7 +33,7 @@ app.use(session({
   secret: 'your-secret-key',
   resave: false,
   saveUninitialized: true,
-  cookie: { secure: false } 
+  cookie: { secure: false }
 }));
 
 // 정적 파일 서빙
@@ -67,6 +67,28 @@ app.get('/todos', (req, res) => {
   }
 });
 
+// 달력 페이지 서빙
+app.get('/calendar', (req, res) => {
+  res.sendFile(path.join(__dirname, 'views', 'calendar.html'));
+});
+
+// 날짜별 Todo 조회 엔드포인트
+app.get('/todos/date/:date', async (req, res) => {
+  try {
+    if (!req.session.user) {
+      return res.status(401).send('로그인 필요');
+    }
+
+    const { date } = req.params;
+    const userId = req.session.user._id;
+
+    const todos = await Todo.find({ userId, date });
+    res.json(todos);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send('서버 에러');
+  }
+});
 
 // 회원가입 엔드포인트
 app.post('/signup', async (req, res) => {

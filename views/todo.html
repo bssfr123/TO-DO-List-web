@@ -80,13 +80,15 @@
       gap: 10px;
       margin-top: 10px;
     }
-    #sort-btn, #search-btn {
+    #sort-btn, #search-btn, #calendar-btn {
       width: 100%;
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
   <h1>Todo 리스트</h1>
+  <button id="calendar-btn">캘린더 보기</button>
   <div id="calendar-container">
     <label for="todo-date">날짜 선택:</label>
     <input type="text" id="todo-date" placeholder="날짜를 선택하세요" required>
@@ -310,6 +312,11 @@
         }
         // 검색 기능 호출
         filterTodoList(searchText);
+      });
+
+      // 캘린더 버튼 클릭 시, calendar 페이지로 이동
+      $('#calendar-btn').click(function() {
+        window.location.href = '/calendar';
       });
     });
   </script>
