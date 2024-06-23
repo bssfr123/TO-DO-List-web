@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Todo List</title>
+    <style>
+    </style>
+</head>
+<body>
+    <h1>Admin Todo List</h1>
+    <ul id="todo-list"></ul>
+
+    <h1>Manage Users</h1>
+    <ul id="user-list"></ul>
+
+    <script>
+        async function fetchTodos() {
+            const response = await fetch('/admin/todos');
+            const todos = await response.json();
+            const todoList = document.getElementById('todo-list');
+
+            todos.forEach(todo => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${todo.text} - ${todo.date} (작성자 ID: ${todo.userId}, 이름: ${todo.username})`;
+                todoList.appendChild(listItem);
+            });
+        }
+
+        async function fetchUsers() {
+            const response = await fetch('/admin/users');
+            const users = await response.json();
+            const userList = document.getElementById('user-list');
+
+            users.forEach(user => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${user.username} - ${user.isAdmin ? 'Admin' : 'User'}`;
+
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.onclick = async () => {
+                    const confirmDelete = confirm(`Are you sure you want to delete user ${user.username}?`);
+                    if (confirmDelete) {
+                        await fetch(`/admin/users/${user._id}`, {
+                            method: 'DELETE'
+                        });
+                        alert('User deleted');
+                        userList.removeChild(listItem);
+                    }
+                };
+
+                listItem.appendChild(deleteButton);
+                userList.appendChild(listItem);
+            });
+        }
+
+        fetchTodos();
+        fetchUsers();
+    </script>
+</body>
+</html>
